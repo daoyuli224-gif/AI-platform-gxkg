@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能对话</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Microsoft YaHei", sans-serif;
+            background: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: #fff;
+            padding: 12px 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .header select {
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 6px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* === 文件上传区域 === */
+        .file-bar {
+            background: #fff;
+            padding: 8px 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+        .file-bar .upload-btn {
+            padding: 5px 14px;
+            background: #fff;
+            border: 1px dashed #1677ff;
+            color: #1677ff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .file-bar .upload-btn:hover { background: #e6f4ff; }
+        .file-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            background: #f0f5ff;
+            border: 1px solid #adc6ff;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #1677ff;
+        }
+        .file-chip .remove {
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 2px;
+        }
+        .file-chip .remove:hover { color: #ff4d4f; }
+        .file-chip .file-size { color: #999; font-size: 11px; }
+
+        /* === 知识库弹窗 === */
+        .modal-overlay {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.45); z-index: 1000;
+            justify-content: center; align-items: center;
+        }
+        .modal-overlay.show { display: flex; }
+        .modal {
+            background: #fff; border-radius: 12px; width: 600px; max-height: 80vh;
+            display: flex; flex-direction: column; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
+        .modal-header {
+            padding: 16px 24px; border-bottom: 1px solid #f0f0f0;
+            font-size: 16px; font-weight: 600; display: flex; justify-content: space-between;
+        }
+        .modal-header button { background: none; border: none; font-size: 18px; cursor: pointer; }
+        .modal-body { padding: 20px 24px; overflow-y: auto; }
+        .modal-body .section { margin-bottom: 16px; }
+        .modal-body label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; color: #555; }
+        .modal-body textarea { width: 100%; border: 1px solid #d9d9d9; border-radius: 6px; padding: 10px; font-size: 13px; resize: vertical; font-family: monospace; }
+        .modal-body .dropzone {
+            border: 2px dashed #d9d9d9; border-radius: 8px; padding: 30px;
+            text-align: center; color: #999; cursor: pointer; margin: 8px 0;
+        }
+        .modal-body .dropzone:hover { border-color: #1677ff; color: #1677ff; }
+        .modal-footer { padding: 12px 24px; border-top: 1px solid #f0f0f0; text-align: right; }
+        .modal-footer button {
+            padding: 8px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;
+        }
+        .modal-footer .btn-primary { background: #1677ff; color: #fff; margin-left: 8px; }
+        .modal-footer .btn-cancel { background: #f5f5f5; color: #333; }
+        .modal-footer .btn-primary:hover { background: #4096ff; }
+        .modal-footer .btn-cancel:hover { background: #e8e8e8; }
+
+        .status-tag {
+            display: inline-block; padding: 2px 10px; border-radius: 10px;
+            font-size: 12px; margin-left: 8px;
+        }
+        .status-tag.ready { background: #f6ffed; color: #52c41a; border: 1px solid #b7eb8f; }
+        .status-tag.empty { background: #fff7e6; color: #fa8c16; border: 1px solid #ffd591; }
+        .kb-info { font-size: 12px; color: #999; margin-top: 4px; }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            animation: fadeIn 0.3s;
+        }
+        .message.user { flex-direction: row-reverse; }
+        .message .avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+        .message.user .avatar { background: #1677ff; }
+        .message.assistant .avatar { background: #52c41a; }
+        .message .bubble {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            word-break: break-word;
+            white-space: pre-wrap;
+        }
+        .message.user .bubble { background: #1677ff; color: #fff; border-bottom-right-radius: 4px; }
+        .message.assistant .bubble { background: #fff; color: #333; border-bottom-left-radius: 4px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .input-area {
+            background: #fff;
+            border-top: 1px solid #e8e8e8;
+            padding: 12px 20px;
+            display: flex;
+            gap: 10px;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            align-items: flex-end;
+        }
+        .input-area textarea {
+            flex: 1;
+            border: 1px solid #d9d9d9;
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            min-height: 40px;
+            max-height: 120px;
+        }
+        .input-area textarea:focus { border-color: #1677ff; }
+        .input-area button {
+            padding: 10px 24px;
+            background: #1677ff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            height: 40px;
+        }
+        .input-area button:hover { background: #4096ff; }
+        .input-area button:disabled { background: #d9d9d9; cursor: not-allowed; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        .loading { display: flex; gap: 4px; padding: 12px 16px; }
+        .loading span {
+            width: 8px; height: 8px;
+            background: #999;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .loading span:nth-child(1) { animation-delay: 0s; }
+        .loading span:nth-child(2) { animation-delay: 0.16s; }
+        .loading span:nth-child(3) { animation-delay: 0.32s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        .tips { text-align: center; color: #999; margin-top: 40px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <label style="font-weight:600;font-size:14px;">选择助手：</label>
+        <select id="chatSelect" onchange="switchChat()">
+            <option value="">-- 加载中 --</option>
+        </select>
+        <button onclick="openKnowledgeModal()" style="margin-left:8px;padding:6px 14px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;font-size:13px;">📁 知识库</button>
+        <button onclick="clearHistory()" style="margin-left:auto;padding:6px 14px;border:1px solid #d9d9d9;border-radius:6px;background:#fff;cursor:pointer;">清除上下文</button>
+    </div>
+
+    <!-- 上传文件状态栏 -->
+    <div class="file-bar" id="fileBar" style="display:none;">
+        <span style="font-size:12px;color:#999;">📎 已上传文件：</span>
+        <span id="fileChips"></span>
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">+ 添加上下文文件</button>
+        <span style="font-size:11px;color:#999;">（文件内容将作为本次对话的上下文）</span>
+    </div>
+
+    <div class="chat-container" id="chatContainer">
+        <div class="tips">选择一个助手开始对话</div>
+    </div>
+    <div class="input-area">
+        <textarea id="inputBox" rows="1" placeholder="输入消息...（Enter 发送，Shift+Enter 换行）" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+        <button id="sendBtn" onclick="sendMessage()">发送</button>
+    </div>
+
+    <!-- 隐藏的文件上传 input，用于对话中临时上传 -->
+    <input type="file" id="fileInput" multiple accept=".txt,.md,.csv,.json,.pdf,.doc,.docx,.py,.js,.java,.go,.rs,.yaml,.yml,.xml,.html,.css,.log" style="display:none;" onchange="handleFileSelect(event)">
+
+    <!-- 知识库弹窗 -->
+    <div class="modal-overlay" id="knowledgeModal">
+        <div class="modal">
+            <div class="modal-header">
+                <span>📁 知识库配置 — <span id="kbChatLabel">deepseek</span></span>
+                <button onclick="closeKnowledgeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="section">
+                    <label>当前状态</label>
+                    <span id="kbStatus" class="status-tag empty">未配置</span>
+                    <div class="kb-info" id="kbInfo"></div>
+                </div>
+                <div class="section">
+                    <label>模式一：直接粘贴文本知识（< 5000 字）</label>
+                    <textarea id="kbText" rows="8" placeholder="在此粘贴产品手册、FAQ、技术文档等内容...&#10;&#10;例如：&#10;国先控股人工智能平台是开源一站式云原生机器学习平台，支持数据管理、模型训练、推理服务等功能。"></textarea>
+                    <button onclick="saveKnowledge('text')" class="btn-primary" style="margin-top:10px;">💾 保存文本知识库</button>
+                </div>
+                <div class="section" style="margin-top: 20px;">
+                    <label>模式二：上传文件作为知识库</label>
+                    <div class="dropzone" onclick="document.getElementById('kbFileInput').click()">
+                        <div style="font-size:32px;">📤</div>
+                        <div>点击选择文件或拖拽到此处</div>
+                        <div style="font-size:12px;margin-top:4px;">支持 txt、md、pdf 等</div>
+                    </div>
+                    <input type="file" id="kbFileInput" multiple accept=".txt,.md,.csv,.json,.pdf,.py,.js,.yaml,.yml,.xml,.html,.css,.log" style="display:none;" onchange="handleKbFileSelect(event)">
+                    <div id="kbFileList" style="margin-top:8px;"></div>
+                    <button id="kbFileSaveBtn" onclick="saveKnowledge('file')" class="btn-primary" style="margin-top:10px;display:none;">💾 上传并保存知识库</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeKnowledgeModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentChat = null;
+        let sessionId = 'session-' + Math.random().toString(36).substr(2, 9);
+        // 临时上下文文件：{ name, size, content (文本内容) }
+        let contextFiles = [];
+
+        // ========== 聊天场景列表 ==========
+        async function loadChats() {
+            try {
+                const res = await fetch('/chat_modelview/api/?_page_size=100');
+                const data = await res.json();
+                const select = document.getElementById('chatSelect');
+                select.innerHTML = '<option value="">-- 选择助手 --</option>';
+                const list = data.result?.data || data.result || [];
+                list.forEach(chat => {
+                    select.innerHTML += `<option value="${chat.name}">${chat.label || chat.name}</option>`;
+                });
+            } catch (e) {
+                console.error('加载列表失败', e);
+            }
+        }
+
+        function switchChat() {
+            const name = document.getElementById('chatSelect').value;
+            if (!name) return;
+            currentChat = name;
+            sessionId = 'session-' + name + '-' + Math.random().toString(36).substr(2, 6);
+            contextFiles = []; // 切换助手时清空上下文文件
+            renderFileChips();
+            const container = document.getElementById('chatContainer');
+            container.innerHTML = '<div class="tips">开始和 <b>' + name + '</b> 对话吧</div>';
+            // 加载知识库状态
+            loadKnowledgeStatus();
+        }
+
+        // ========== 发送消息 ==========
+        async function sendMessage() {
+            const input = document.getElementById('inputBox');
+            const text = input.value.trim();
+            const hasFiles = contextFiles.length > 0;
+            if (!text && !hasFiles) return;
+            if (!currentChat) return;
+
+            // 构建消息文本
+            let searchText = text || '请阅读以下文件内容并给出摘要';
+            if (contextFiles.length > 0) {
+                const fileContexts = contextFiles.map(f =>
+                    `\n\n--- 文件：${f.name} ---\n${f.content}`
+                ).join('');
+                if (text) {
+                    searchText = `请参考以下文件内容回答问题。\n\n文件内容：${fileContexts}\n\n用户问题：${text}`;
+                } else {
+                    searchText = `请阅读以下文件内容，给出一份详细的摘要和分析：\n${fileContexts}`;
+                }
+            }
+
+            // 显示用户消息
+            let displayText = text || '(上传了文件，请分析内容)';
+            if (contextFiles.length > 0 && text) {
+                displayText = `📎 [${contextFiles.length}个文件] ${text}`;
+            } else if (contextFiles.length > 0) {
+                displayText = `📎 [${contextFiles.length}个文件] 请分析文件内容`;
+            }
+            addMessage('user', displayText);
+            input.value = '';
+            document.getElementById('sendBtn').disabled = true;
+
+            const loadingId = addLoading();
+
+            try {
+                const res = await fetch(`/chat_modelview/api/chat/${currentChat}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        search_text: searchText,
+                        session_id: sessionId,
+                        enable_history: true
+                    })
+                });
+                const data = await res.json();
+                removeLoading(loadingId);
+
+                if (data.status === 0 && data.result) {
+                    data.result.forEach(item => {
+                        if (item.text) addMessage('assistant', item.text);
+                        if (item.image) {
+                            addMessage('assistant', `<img src="${item.image}" style="max-width:300px;border-radius:8px;" />`);
+                        }
+                    });
+                } else {
+                    addMessage('assistant', '抱歉，请求失败：' + (data.message || '未知错误'));
+                }
+            } catch (e) {
+                removeLoading(loadingId);
+                addMessage('assistant', '网络错误：' + e.message);
+            }
+
+            document.getElementById('sendBtn').disabled = false;
+            input.focus();
+            // 发送后清空临时上下文文件
+            contextFiles = [];
+            renderFileChips();
+        }
+
+        // ========== 文件上传（临时上下文） ==========
+        function handleFileSelect(event) {
+            const files = Array.from(event.target.files);
+            files.forEach(file => readAndStoreFile(file));
+            event.target.value = '';
+        }
+
+        function readAndStoreFile(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                contextFiles.push({
+                    name: file.name,
+                    size: formatSize(file.size),
+                    content: e.target.result
+                });
+                renderFileChips();
+            };
+            reader.onerror = function() {
+                alert('读取文件失败：' + file.name);
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function removeContextFile(index) {
+            contextFiles.splice(index, 1);
+            renderFileChips();
+        }
+
+        function renderFileChips() {
+            const bar = document.getElementById('fileBar');
+            const chips = document.getElementById('fileChips');
+            if (contextFiles.length === 0) {
+                bar.style.display = 'none';
+                return;
+            }
+            bar.style.display = 'flex';
+            chips.innerHTML = contextFiles.map((f, i) =>
+                `<span class="file-chip">📄 ${f.name} <span class="file-size">${f.size}</span><span class="remove" onclick="removeContextFile(${i})">×</span></span>`
+            ).join('');
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + 'B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+        }
+
+        // ========== UI 工具函数 ==========
+        function addMessage(role, content) {
+            const container = document.getElementById('chatContainer');
+            const div = document.createElement('div');
+            div.className = 'message ' + role;
+            div.innerHTML = `
+                <div class="avatar">${role === 'user' ? '👤' : '🤖'}</div>
+                <div class="bubble">${content}</div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function addLoading() {
+            const id = 'loading-' + Date.now();
+            const container = document.getElementById('chatContainer');
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = 'message assistant';
+            div.innerHTML = `
+                <div class="avatar">🤖</div>
+                <div class="bubble"><div class="loading"><span></span><span></span><span></span></div></div>
+            `;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            return id;
+        }
+
+        function removeLoading(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        async function clearHistory() {
+            if (!currentChat) return;
+            await fetch(`/chat_modelview/api/clear/${sessionId}`, { method: 'DELETE' });
+            sessionId = 'session-' + currentChat + '-' + Math.random().toString(36).substr(2, 6);
+            contextFiles = [];
+            renderFileChips();
+            addMessage('assistant', '对话上下文已清空');
+        }
+
+        // ========== 知识库管理 ==========
+        let kbFiles = [];
+
+        function openKnowledgeModal() {
+            if (!currentChat) { alert('请先选择一个助手'); return; }
+            document.getElementById('kbChatLabel').textContent = currentChat;
+            document.getElementById('knowledgeModal').classList.add('show');
+            kbFiles = [];
+            document.getElementById('kbFileList').innerHTML = '';
+            document.getElementById('kbFileSaveBtn').style.display = 'none';
+            loadKnowledgeStatus();
+        }
+
+        function closeKnowledgeModal() {
+            document.getElementById('knowledgeModal').classList.remove('show');
+        }
+
+        async function loadKnowledgeStatus() {
+            if (!currentChat) return;
+            try {
+                const res = await fetch(`/chat_modelview/api/${currentChat}`);
+                const data = await res.json();
+                if (data.status === 0 && data.result) {
+                    const knowledge = data.result.knowledge;
+                    const status = document.getElementById('kbStatus');
+                    const info = document.getElementById('kbInfo');
+                    if (!knowledge || knowledge === '{}' || knowledge === '') {
+                        status.className = 'status-tag empty';
+                        status.textContent = '未配置';
+                        info.textContent = '';
+                    } else {
+                        try {
+                            const k = JSON.parse(knowledge);
+                            if (k.type === 'str' && k.content) {
+                                status.className = 'status-tag ready';
+                                status.textContent = '已配置文本知识库';
+                                info.textContent = k.content.length > 200 ? k.content.substring(0, 200) + '...' : k.content;
+                                document.getElementById('kbText').value = k.content;
+                            } else if (k.file && k.file.length > 0) {
+                                status.className = 'status-tag ready';
+                                status.textContent = `已配置文件知识库（${k.file.length}个文件）`;
+                                info.textContent = k.file.join(', ');
+                            } else {
+                                status.className = 'status-tag ready';
+                                status.textContent = '已配置';
+                                info.textContent = JSON.stringify(k);
+                            }
+                        } catch (e) {
+                            status.className = 'status-tag ready';
+                            status.textContent = '纯文本知识库';
+                            info.textContent = knowledge.length > 200 ? knowledge.substring(0, 200) + '...' : knowledge;
+                            document.getElementById('kbText').value = knowledge;
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('加载知识库状态失败', e);
+            }
+        }
+
+        function handleKbFileSelect(event) {
+            const files = Array.from(event.target.files);
+            kbFiles = kbFiles.concat(files);
+            renderKbFileList();
+            document.getElementById('kbFileSaveBtn').style.display = 'inline-block';
+            event.target.value = '';
+        }
+
+        function renderKbFileList() {
+            const list = document.getElementById('kbFileList');
+            list.innerHTML = kbFiles.map((f, i) =>
+                `<div class="file-chip" style="margin:4px 0;">📄 ${f.name} <span class="file-size">${formatSize(f.size)}</span><span class="remove" onclick="removeKbFile(${i})">×</span></div>`
+            ).join('');
+        }
+
+        function removeKbFile(index) {
+            kbFiles.splice(index, 1);
+            renderKbFileList();
+            if (kbFiles.length === 0) {
+                document.getElementById('kbFileSaveBtn').style.display = 'none';
+            }
+        }
+
+        async function saveKnowledge(mode) {
+            if (!currentChat) return;
+
+            let knowledgeConfig;
+            if (mode === 'text') {
+                const text = document.getElementById('kbText').value.trim();
+                if (!text) { alert('请先输入知识库文本'); return; }
+                knowledgeConfig = JSON.stringify({ type: 'str', content: text });
+            } else if (mode === 'file') {
+                if (kbFiles.length === 0) { alert('请先选择文件'); return; }
+                // 读取所有文件内容并转为纯文本存储
+                const fileContents = [];
+                for (const file of kbFiles) {
+                    const content = await readFileAsText(file);
+                    fileContents.push({ name: file.name, content: content });
+                }
+                const combinedText = fileContents.map(f =>
+                    `=== ${f.name} ===\n${f.content}`
+                ).join('\n\n');
+                knowledgeConfig = JSON.stringify({ type: 'str', content: combinedText });
+            }
+
+            try {
+                const res = await fetch(`/chat_modelview/api/${currentChat}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        knowledge: knowledgeConfig,
+                        owner: '*'
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 0) {
+                    alert('知识库保存成功！现在对话时会在提示词中自动注入知识库内容。');
+                    loadKnowledgeStatus();
+                } else {
+                    alert('保存失败：' + (data.message || '未知错误'));
+                }
+            } catch (e) {
+                alert('保存失败：' + e.message);
+            }
+        }
+
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = () => reject(new Error('读取失败'));
+                reader.readAsText(file, 'UTF-8');
+            });
+        }
+
+        // 初始化
+        loadChats();
+
+        // 知识库弹窗点击遮罩关闭
+        document.getElementById('knowledgeModal').addEventListener('click', function(e) {
+            if (e.target === this) closeKnowledgeModal();
+        });
+    </script>
+</body>
+</html>

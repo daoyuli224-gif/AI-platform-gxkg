@@ -1,0 +1,12 @@
+**/node_modules/
+myapp/frontend
+myapp/vision
+myapp/visionPlus
+myapp/search
+myapp/test
+myapp/project-*
+.git
+.DS_Store
+install/docker/file
+install/docker/data
+dist

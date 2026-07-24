@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" width="100%" height="100%">
+  <defs>
+    <linearGradient id="aiGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#38bdf8" />
+    </linearGradient>
+  </defs>
+
+  <!-- 白底背景 -->
+  <rect width="760" height="200" fill="#ffffff" />
+
+  <!-- 左侧：图标组合（融合 AI 与 GXKG 理念） -->
+  <g transform="translate(15, 15)">
+    <!-- 外框：代表平台与科技容器 -->
+    <rect x="10" y="10" width="150" height="150" rx="20" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2" />
+
+    <!-- 抽象融合图形：象征神经网络与 GXKG 首字母形态的科技连结 -->
+    <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <!-- 节点网络骨架 -->
+      <path d="M45 50 L85 50 L85 90" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3,3" />
+      <path d="M125 120 L85 120 L85 90" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="3,3" />
+
+      <!-- 主体科技几何区块 (代表 AI 核心) -->
+      <rect x="62" y="62" width="46" height="46" rx="10" fill="url(#aiGrad)" opacity="0.1" />
+      <rect x="58" y="58" width="54" height="54" rx="12" stroke="url(#aiGrad)" stroke-width="3" fill="#ffffff" />
+
+      <!-- 四角智能节点 -->
+      <circle cx="45" cy="50" r="6" fill="#0284c7" />
+      <circle cx="125" cy="50" r="6" fill="#1d4ed8" />
+      <circle cx="45" cy="120" r="6" fill="#1d4ed8" />
+      <circle cx="125" cy="120" r="6" fill="#0284c7" />
+
+      <!-- 动态连接线 -->
+      <line x1="45" y1="50" x2="58" y2="58" stroke="url(#aiGrad)" stroke-width="3" />
+      <line x1="125" y1="50" x2="112" y2="58" stroke="url(#aiGrad)" stroke-width="3" />
+      <line x1="45" y1="120" x2="58" y2="112" stroke="url(#aiGrad)" stroke-width="3" />
+      <line x1="125" y1="120" x2="112" y2="112" stroke="url(#aiGrad)" stroke-width="3" />
+    </g>
+
+    <!-- 中心醒目 AI 与 GXKG 寓意字母呈现 -->
+    <text x="85" y="87" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="18" fill="#0f172a" text-anchor="middle">AI</text>
+    <text x="85" y="103" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="700" font-size="9" fill="#0284c7" text-anchor="middle" letter-spacing="1.5px">GXKG</text>
+  </g>
+
+  <!-- 右侧：标注文字 -->
+  <g transform="translate(195, 0)">
+    <!-- 主标题 -->
+    <text x="0" y="94" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="32" fill="#0f172a" letter-spacing="0.5px">国先控股人工智能平台</text>
+    
+    <!-- 英文副标题 -->
+    <text x="2" y="128" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" font-weight="600" font-size="12" fill="#64748b" letter-spacing="3.5px">GUOXIAN HOLDINGS AI PLATFORM</text>
+    
+    <!-- 简约设计底部分隔线装饰 -->
+    <rect x="2" y="142" width="48" height="3" rx="1.5" fill="url(#accentGrad)" />
+  </g>
+</svg>
